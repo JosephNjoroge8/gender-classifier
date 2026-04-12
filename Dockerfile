@@ -26,20 +26,33 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Set working directory
 WORKDIR /var/www/html
 
-# Copy application files
+# Copy only composer files first
+COPY composer.json composer.lock* ./
+
+# Install PHP dependencies (skip scripts to avoid errors during build)
+RUN composer install \
+    --optimize-autoloader \
+    --no-dev \
+    --no-interaction \
+    --no-scripts
+
+# Copy entire application
 COPY . .
 
-# Install PHP dependencies
-RUN composer install --optimize-autoloader --no-dev --no-interaction
+# Run composer scripts after app is copied
+RUN composer dump-autoload --optimize
 
 # Generate app key
 RUN php artisan key:generate --force
 
-# Run migrations
-RUN php artisan migrate --force --no-interaction
+# Create SQLite database and run migrations
+RUN mkdir -p database && \
+    touch database/database.sqlite && \
+    php artisan migrate --force --no-interaction
 
 # Set permissions
-RUN chown -R www-data:www-data /var/www/html
+RUN chown -R www-data:www-data /var/www/html && \
+    chmod -R 755 storage bootstrap/cache
 
 # Configure Apache document root
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
@@ -47,7 +60,7 @@ RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-av
 
 # Create .htaccess for Laravel routing
 RUN echo '<Directory /var/www/html/public> \
-    Options Indexes FollowSymLinks \
+    Options -MultiViews -Indexes +FollowSymLinks \
     AllowOverride All \
     Require all granted \
     <IfModule mod_rewrite.c> \
