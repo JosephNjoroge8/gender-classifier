@@ -1,0 +1,27 @@
+### Test 1: Happy path
+GET http://127.0.0.1:8000/api/classify?name=james
+
+###
+
+### Test 2: Missing name — expect 400
+GET http://127.0.0.1:8000/api/classify
+
+###
+
+### Test 3: Empty name — expect 400
+GET http://127.0.0.1:8001/api/classify?name=
+
+###
+
+### Test 4: Array param (non-string) — expect 422
+GET http://127.0.0.1:8000/api/classify?name[]=john&name[]=jane
+
+###
+
+### Test 5: Name with no gender data — expect 200 + error body
+GET http://127.0.0.1:8000/api/classify?name=xyzabc123
+
+###
+
+### Test 6: Check CORS header is present
+GET http://127.0.0.1:8000/api/classify?name=maria
