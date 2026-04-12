@@ -11,8 +11,12 @@ class ClassifyController extends Controller
 {
     public function classify(Request $request): JsonResponse
     {
+        // Fetch parameter once before any processing
+        $nameParam = $request->query('name');
+
         // GATE 1: name must be present and non-empty → 400
-        if (!$request->has('name') || trim($request->query('name', '')) === '') {
+        // Check BEFORE trim() to avoid errors with arrays
+        if ($nameParam === null || $nameParam === '' || !$request->has('name')) {
             return response()->json([
                 'status'  => 'error',
                 'message' => 'The name parameter is required and cannot be empty.',
@@ -20,8 +24,7 @@ class ClassifyController extends Controller
         }
 
         // GATE 2: name must be a string, not an array → 422
-        $nameParam = $request->query('name');
-
+        // Check type BEFORE trim() — trim() on array causes fatal error
         if (!is_string($nameParam)) {
             return response()->json([
                 'status'  => 'error',
@@ -29,7 +32,16 @@ class ClassifyController extends Controller
             ], 422);
         }
 
+        // Safe to trim now — we know it's a string
         $name = trim($nameParam);
+
+        // GATE 3: After trimming, ensure there's still content
+        if ($name === '') {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'The name parameter is required and cannot be empty.',
+            ], 400);
+        }
 
         // CALL GENDERIZE API
         try {
