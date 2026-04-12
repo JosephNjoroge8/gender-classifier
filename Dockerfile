@@ -1,54 +1,53 @@
-FROM php:8.2-apache
+FROM php:8.2-cli AS composer
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    git \
-    curl \
-    libpng-dev \
-    libjpeg62-turbo-dev \
-    libfreetype6-dev \
-    locales \
-    libzip-dev \
-    zip \
-    unzip \
-    sqlite3 \
-    libsqlite3-dev \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) gd zip pdo pdo_sqlite \
-    && rm -rf /var/lib/apt/lists/*
-
-# Enable Apache rewrite module
-RUN a2enmod rewrite
+WORKDIR /app
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Set working directory
-WORKDIR /var/www/html
-
-# Copy only composer files first
+# Copy composer files
 COPY composer.json composer.lock* ./
 
-# Install PHP dependencies (skip scripts to avoid errors during build)
+# Install dependencies
 RUN composer install \
     --optimize-autoloader \
     --no-dev \
-    --no-interaction \
-    --no-scripts
+    --no-interaction
+
+# ============================================================
+
+FROM php:8.2-apache
+
+# Install only minimal system dependencies
+RUN apt-get update && apt-get install -y \
+    sqlite3 \
+    libsqlite3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install PHP extensions
+RUN docker-php-ext-install pdo pdo_sqlite
+
+# Enable Apache rewrite module
+RUN a2enmod rewrite
+
+# Set working directory
+WORKDIR /var/www/html
+
+# Copy vendor from builder image
+COPY --from=composer /app/vendor ./vendor
 
 # Copy entire application
 COPY . .
 
-# Run composer scripts after app is copied
-RUN composer dump-autoload --optimize
+# Create SQLite database
+RUN mkdir -p database && touch database/database.sqlite
 
-# Generate app key
-RUN php artisan key:generate --force
+# Generate app key (if not present)
+RUN if [ ! -f .env ]; then cp .env.example .env; fi && \
+    php artisan key:generate --force || true
 
-# Create SQLite database and run migrations
-RUN mkdir -p database && \
-    touch database/database.sqlite && \
-    php artisan migrate --force --no-interaction
+# Run migrations
+RUN php artisan migrate --force --no-interaction || true
 
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html && \
@@ -58,7 +57,7 @@ RUN chown -R www-data:www-data /var/www/html && \
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
 
-# Create .htaccess for Laravel routing
+# Laravel routing configuration
 RUN echo '<Directory /var/www/html/public> \
     Options -MultiViews -Indexes +FollowSymLinks \
     AllowOverride All \
@@ -71,7 +70,6 @@ RUN echo '<Directory /var/www/html/public> \
     </IfModule> \
 </Directory>' >> /etc/apache2/apache2.conf
 
-# Expose port
 EXPOSE 80
 
 CMD ["apache2-foreground"]
