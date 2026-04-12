@@ -15,11 +15,13 @@ This API implements a single endpoint that handles intelligent data transformati
 
 ## Live Endpoint
 
-**Base URL:** `https://your-app.railway.app` (update after deployment)
+**Base URL:** `https://gender-classifier.onrender.com` (or your Render URL)
 
 ```
 GET /api/classify?name={name}
 ```
+
+**Status:** 🚀 Live on Render.com
 
 ## API Usage
 
@@ -219,12 +221,25 @@ railway up
 
 Railway auto-detects Laravel and provides a public URL instantly.
 
-### Render
+### Render (Free Tier - Recommended)
 
-1. Push code to GitHub (public repo)
-2. Connect GitHub repo to Render
-3. Set build command: `composer install --optimize-autoloader --no-dev`
-4. Set start command: `php artisan serve --host=0.0.0.0 --port=$PORT`
+1. Go to https://render.com and sign up
+2. Click **New +** → **Web Service**
+3. Select **Connect repository** and choose `gender-classifier`
+4. Fill in settings:
+   - **Name:** gender-classifier
+   - **Environment:** Docker
+   - **Branch:** Main
+   - **Root Directory:** .
+5. Add environment variables:
+   - `APP_KEY`: Run `php artisan key:generate` locally and copy the value
+   - `APP_ENV`: production
+   - `APP_DEBUG`: false
+6. Click **Deploy**
+
+Render will auto-detect the Dockerfile and build/deploy automatically.
+
+**Your live URL will appear once deployment completes** (usually 5-10 minutes)
 
 ### Pre-Deployment Checklist
 

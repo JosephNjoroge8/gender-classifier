@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: gender-classifier
+    plan: free
+    runtime: docker
+    region: oregon
+    rootDir: .
+    dockerfilePath: ./Dockerfile
+    autoDeploy: true
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: PORT
+        value: "80"
