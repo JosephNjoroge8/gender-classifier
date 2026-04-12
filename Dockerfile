@@ -11,6 +11,8 @@ RUN apt-get update && apt-get install -y \
     libzip-dev \
     zip \
     unzip \
+    sqlite3 \
+    libsqlite3-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) gd zip pdo pdo_sqlite \
     && rm -rf /var/lib/apt/lists/*
@@ -28,17 +30,23 @@ WORKDIR /var/www/html
 COPY . .
 
 # Install PHP dependencies
-RUN composer install --optimize-autoloader --no-dev
+RUN composer install --optimize-autoloader --no-dev --no-interaction
+
+# Generate app key
+RUN php artisan key:generate --force
+
+# Run migrations
+RUN php artisan migrate --force --no-interaction
 
 # Set permissions
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+RUN chown -R www-data:www-data /var/www/html
 
 # Configure Apache document root
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
 
-# Configure Apache to handle Laravel routes
-RUN echo '<Directory ${APACHE_DOCUMENT_ROOT}> \
+# Create .htaccess for Laravel routing
+RUN echo '<Directory /var/www/html/public> \
     Options Indexes FollowSymLinks \
     AllowOverride All \
     Require all granted \
@@ -48,14 +56,9 @@ RUN echo '<Directory ${APACHE_DOCUMENT_ROOT}> \
         RewriteCond %{REQUEST_FILENAME} !-f \
         RewriteRule ^ index.php [L] \
     </IfModule> \
-</Directory>' > /etc/apache2/conf-available/laravel.conf && \
-    a2enconf laravel
+</Directory>' >> /etc/apache2/apache2.conf
 
-# Generate app key and run migrations
-RUN php artisan key:generate
-RUN php artisan migrate --force
-
-# Expose port (Render uses $PORT environment variable)
+# Expose port
 EXPOSE 80
 
 CMD ["apache2-foreground"]
