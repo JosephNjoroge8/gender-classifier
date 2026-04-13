@@ -1,0 +1,11 @@
+.git
+.gitignore
+README.md
+COMPLETION_SUMMARY.md
+LICENSE
+tests
+.env.example
+*.log
+storage/logs/*
+.DS_Store
+node_modules

@@ -1,4 +1,4 @@
-FROM php:8.2-apache
+FROM php:8.4-apache
 
 # Install dependencies
 RUN apt-get update && apt-get install -y \
@@ -15,8 +15,8 @@ WORKDIR /var/www/html
 # Copy composer files first (for layer caching)
 COPY composer.json composer.lock ./
 
-# Run composer install
-RUN COMPOSER_MEMORY_LIMIT=-1 composer install \
+# Run composer install (PHP 8.4 compatible)
+RUN composer install \
     --no-dev --no-interaction --prefer-dist --optimize-autoloader
 
 # Copy application code
