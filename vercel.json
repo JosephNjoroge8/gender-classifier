@@ -1,6 +1,4 @@
 {
   "version": 2,
-  "buildCommand": "composer install --no-dev",
-  "outputDirectory": "public",
-  "framework": "laravel"
+  "outputDirectory": "public"
 }
