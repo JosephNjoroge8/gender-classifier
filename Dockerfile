@@ -1,32 +1,33 @@
-FROM php:8.4-fpm
+FROM php:8.4-cli
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
-    sqlite3 libsqlite3-dev \
+    sqlite3 libsqlite3-dev  git unzip \
     && docker-php-ext-install pdo pdo_sqlite \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/*
 
 # Install Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-WORKDIR /var/www/html
+WORKDIR /app
 
-# Copy and install dependencies
+# Copy composer files
 COPY composer.json composer.lock ./
-RUN composer install \
-    --no-dev --no-interaction --prefer-dist --optimize-autoloader
 
-# Copy application
+# Install dependencies
+RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+
+# Copy application code
 COPY . .
 
-# Set permissions
-RUN mkdir -p storage/logs && chmod -R 777 storage bootstrap/cache
+# Create necessary directories
+RUN mkdir -p storage/logs bootstrap/cache && chmod -R 777 storage bootstrap/cache
 
-# Expose port
-EXPOSE ${PORT:-8000}
+# Expose port (Railway will set PORT env var)
+EXPOSE 8000
 
-# Start PHP built-in server
-CMD ["sh", "-c", "php -S 0.0.0.0:${PORT:-8000} -t public"]
+# Start application
+CMD ["php", "-S", "0.0.0.0:8000", "-t", "public"]
 FROM php:8.4-apache
 
 # Install dependencies
