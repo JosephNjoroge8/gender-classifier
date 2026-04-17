@@ -24,8 +24,9 @@ COPY . .
 # Create necessary Laravel directories
 RUN mkdir -p storage/logs bootstrap/cache && chmod -R 777 storage bootstrap/cache database
 
-# Expose the port
-EXPOSE 5000
+# Expose the port (Fly.io expects 8080, but we'll use PORT env var if set)
+EXPOSE 8080
 
-# Start PHP built-in server using PORT env var (defaults to 5000 for Railway)
-CMD sh -c "php -S 0.0.0.0:${PORT:-5000} -t public"
+# Start PHP built-in server using PORT env var (defaults to 8080)
+# Fly.io sets PORT=8080 automatically
+CMD sh -c "php -S 0.0.0.0:${PORT:-8080} -t public"
