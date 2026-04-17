@@ -25,7 +25,7 @@ COPY . .
 RUN mkdir -p storage/logs bootstrap/cache && chmod -R 777 storage bootstrap/cache database
 
 # Expose the port
-EXPOSE 8000
+EXPOSE 5000
 
-# Start PHP built-in server on port 8000 (Railway will map this)
-CMD ["php", "-S", "0.0.0.0:8000", "-t", "public"]
+# Start PHP built-in server using PORT env var (defaults to 5000 for Railway)
+CMD sh -c "php -S 0.0.0.0:${PORT:-5000} -t public"
