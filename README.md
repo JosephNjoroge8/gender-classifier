@@ -15,20 +15,20 @@ This API implements a single endpoint that handles intelligent data transformati
 
 ## Live Endpoint
 
-**Base URL:** `https://gender-classifier.vercel.app` (or your Vercel URL)
+**Base URL:** (Deploy with: `php -S 0.0.0.0:3000 -t public` or use Fly.io)
 
 ```
 GET /api/classify?name={name}
 ```
 
-**Status:** 🚀 Live on Vercel
+**Status:** ✅ Ready for deployment
 
 ## API Usage
 
 ### Successful Request
 
 ```bash
-curl "http://127.0.0.1:8000/api/classify?name=james"
+curl "http://localhost:3000/api/classify?name=james"
 ```
 
 ### Success Response (HTTP 200)
